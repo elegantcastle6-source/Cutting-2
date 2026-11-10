@@ -30,6 +30,7 @@ import {
   Combine,
   Box,
   Filter,
+  Eye,
 } from 'lucide-react';
 
 interface CuttingListViewProps {
@@ -45,13 +46,18 @@ interface CuttingListViewProps {
   onClearAllParts: (unitName?: string) => void;
   onMergeAndSortUnit?: (unitName?: string) => void;
   onOpenThermalLabels: () => void;
+  onOpenPrintPreview?: () => void;
   onDownloadCsv: () => void;
   onDownloadTxt: () => void;
   onCopyTxt: () => void;
+  printScope?: 'current' | 'all';
+  onChangePrintScope?: (scope: 'current' | 'all') => void;
   printFontSize?: number;
   onChangePrintFontSize?: (size: number) => void;
-  printLayout?: 'right-first' | 'standard';
-  onChangePrintLayout?: (layout: 'right-first' | 'standard') => void;
+  printLayout?: 'standard' | 'right-first' | 'split' | 'full';
+  onChangePrintLayout?: (layout: 'standard' | 'right-first' | 'split' | 'full') => void;
+  fitSinglePage?: boolean;
+  onChangeFitSinglePage?: (fit: boolean) => void;
 }
 
 export const CuttingListView: React.FC<CuttingListViewProps> = ({
@@ -67,13 +73,18 @@ export const CuttingListView: React.FC<CuttingListViewProps> = ({
   onClearAllParts,
   onMergeAndSortUnit,
   onOpenThermalLabels,
+  onOpenPrintPreview,
   onDownloadCsv,
   onDownloadTxt,
   onCopyTxt,
+  printScope = 'current',
+  onChangePrintScope,
   printFontSize = 11,
   onChangePrintFontSize,
-  printLayout = 'right-first',
+  printLayout = 'standard',
   onChangePrintLayout,
+  fitSinglePage = true,
+  onChangeFitSinglePage,
 }) => {
   const parts = customer.parts || [];
   const isFilteredUnit = viewMode === 'unit' && selectedUnitFilter && selectedUnitFilter !== 'all';
@@ -131,7 +142,7 @@ export const CuttingListView: React.FC<CuttingListViewProps> = ({
           </button>
         </div>
 
-        {/* Right: Actions (Print, Labels, Export, Clear) */}
+        {/* Right: Actions (Print, Preview, Labels, Export, Clear) */}
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={() => window.print()}
@@ -141,6 +152,17 @@ export const CuttingListView: React.FC<CuttingListViewProps> = ({
             <Printer className="w-3.5 h-3.5" />
             <span>Print List (A4)</span>
           </button>
+
+          {onOpenPrintPreview && (
+            <button
+              onClick={onOpenPrintPreview}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white transition flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              title="Open full-page A4 preview with live font size scaling and scope tester"
+            >
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Print Preview</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenThermalLabels}
@@ -202,60 +224,123 @@ export const CuttingListView: React.FC<CuttingListViewProps> = ({
 
       {/* Print Settings & Font Size Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 p-2.5 mb-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">
-            <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Print Font Size:</span>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Font Size Selector */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">
+              <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Print Font Size:</span>
+            </div>
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+              {[9, 10, 11, 12, 13].map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => onChangePrintFontSize?.(size)}
+                  className={`px-2 py-0.5 text-xs font-bold rounded transition cursor-pointer ${
+                    printFontSize === size
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title={`Set A4 print table font size to ${size}px`}
+                >
+                  {size}px
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-            {[9, 10, 11, 12, 13].map((size) => (
+
+          {/* Scope Selector */}
+          <div className="flex items-center gap-1.5">
+            <div className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">
+              Scope:
+            </div>
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-0.5 rounded border border-emerald-200 dark:border-emerald-800">
               <button
-                key={size}
                 type="button"
-                onClick={() => onChangePrintFontSize?.(size)}
+                onClick={() => onChangePrintScope?.('current')}
                 className={`px-2 py-0.5 text-xs font-bold rounded transition cursor-pointer ${
-                  printFontSize === size
+                  printScope === 'current'
                     ? 'bg-emerald-600 text-white shadow-2xs'
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
-                title={`Set A4 print table font size to ${size}px`}
+                title="Print only the selected unit"
               >
-                {size}px
+                Current Unit
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => onChangePrintScope?.('all')}
+                className={`px-2 py-0.5 text-xs font-bold rounded transition cursor-pointer ${
+                  printScope === 'all'
+                    ? 'bg-emerald-600 text-white shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                title="Print all units in customer order"
+              >
+                All Units
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {onChangeFitSinglePage && (
+            <button
+              type="button"
+              onClick={() => onChangeFitSinglePage(!fitSinglePage)}
+              className={`px-2.5 py-1 text-xs font-bold rounded-md border transition cursor-pointer flex items-center gap-1 ${
+                fitSinglePage
+                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-2xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-emerald-200 dark:border-emerald-800 hover:bg-slate-100'
+              }`}
+              title="Compact rows and spacing so unit cutting list fits on a single A4 page"
+            >
+              <span>📄 Fit 1 Page:</span>
+              <span className="font-extrabold">{fitSinglePage ? 'ON' : 'OFF'}</span>
+            </button>
+          )}
+
           <div className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wide">
-            Page Print Layout:
+            Unit Print Fill:
           </div>
           <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-0.5 rounded border border-emerald-200 dark:border-emerald-800">
             <button
               type="button"
-              onClick={() => onChangePrintLayout?.('right-first')}
+              onClick={() => onChangePrintLayout?.('standard')}
               className={`px-2.5 py-0.5 text-xs font-bold rounded transition cursor-pointer flex items-center gap-1 ${
-                printLayout === 'right-first'
+                printLayout !== 'split' && printLayout !== 'right-first'
                   ? 'bg-emerald-600 text-white shadow-2xs'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
-              title="Fill right side column first all the way down, then left column"
+              title="Unit cutting list runs all the way down in one continuous full-width table (not split)"
             >
-              <span>👉 Fill Right First</span>
+              <span>⬇️ All The Way Down (Not Split)</span>
             </button>
             <button
               type="button"
-              onClick={() => onChangePrintLayout?.('standard')}
-              className={`px-2.5 py-0.5 text-xs font-bold rounded transition cursor-pointer ${
-                printLayout === 'standard'
+              onClick={() => onChangePrintLayout?.('split')}
+              className={`px-2.5 py-0.5 text-xs font-bold rounded transition cursor-pointer flex items-center gap-1 ${
+                printLayout === 'split' || printLayout === 'right-first'
                   ? 'bg-emerald-600 text-white shadow-2xs'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
-              title="Standard left-to-right 2-column layout"
+              title="Split unit cutting list into 2 columns (left and right)"
             >
-              <span>Standard (Left First)</span>
+              <span>↔️ 2 Columns</span>
             </button>
           </div>
+
+          {onOpenPrintPreview && (
+            <button
+              onClick={onOpenPrintPreview}
+              className="px-2.5 py-1 text-xs font-bold rounded bg-slate-800 hover:bg-slate-700 text-white transition flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95 ml-1"
+              title="Open full-page A4 preview with live font size scaling and scope tester"
+            >
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Preview A4</span>
+            </button>
+          )}
 
           <button
             onClick={() => window.print()}

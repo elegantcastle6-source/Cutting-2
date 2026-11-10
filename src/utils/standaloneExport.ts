@@ -11,12 +11,20 @@ import { Customer, AppSettings } from '../types/cutting';
  */
 export function generateStandalonePCSoftware(
   initialCustomer: Customer,
-  settings: AppSettings
+  settings: AppSettings,
+  printFontSize = 11,
+  printLayout: 'standard' | 'right-first' | 'split' | 'full' = 'standard',
+  fitSinglePage = true
 ): string {
   const exportData = JSON.stringify({
     customers: [initialCustomer],
     cur: initialCustomer.id,
-    set: settings,
+    set: {
+      ...settings,
+      printFontSize,
+      printLayout,
+      fitSinglePage,
+    },
   });
 
   return `<!DOCTYPE html>
@@ -129,11 +137,13 @@ td.s { font-weight: 700; font-family: ui-monospace, monospace; }
   main { padding: 0 !important; max-width: none !important; margin: 0 !important; }
   section { border: none !important; padding: 0 !important; margin: 0 0 12pt 0 !important; box-shadow: none !important; background: transparent !important; }
   .ph { display: block !important; border-bottom: 2pt solid #000 !important; padding-bottom: 6pt !important; margin-bottom: 10pt !important; }
-  #pinfo { display: grid !important; grid-template-columns: 1fr auto 1fr !important; align-items: baseline !important; font-weight: bold !important; }
+  #pinfo { display: grid !important; grid-template-columns: 1fr auto 1fr !important; align-items: baseline !important; font-weight: bold !important; gap: 8px !important; }
   #pcc { font-size: 10pt !important; text-align: left !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   #pnm { font-size: 18pt !important; text-align: center !important; font-weight: 800 !important; }
   #pun { font-size: 14pt !important; text-align: right !important; }
-  .phr { display: flex !important; justify-content: space-between !important; align-items: baseline !important; margin-top: 3pt !important; font-size: 11pt !important; font-weight: bold !important; color: #333 !important; }
+  .phr { display: flex !important; justify-content: space-between !important; align-items: baseline !important; margin-top: 3pt !important; font-size: 10pt !important; font-weight: bold !important; color: #333 !important; }
+  #pnotes { margin-top: 4pt !important; padding: 3pt 6pt !important; background: #f8fafc !important; border: 1pt solid #cbd5e1 !important; border-radius: 3pt !important; font-size: 9.5pt !important; color: #000 !important; }
+  #pboards { margin-top: 3pt !important; font-size: 8.5pt !important; color: #475569 !important; font-weight: 600 !important; }
   table { width: 100% !important; border-collapse: collapse !important; font-size: var(--tfs, 9.5pt) !important; table-layout: auto !important; }
   th, td { border: 1pt solid #888 !important; color: #000 !important; padding: var(--cpad, 3pt 5pt) !important; white-space: normal !important; }
   th { background: #f2f2f2 !important; font-weight: bold !important; font-size: var(--thfs, 8.5pt) !important; }
@@ -141,11 +151,11 @@ td.s { font-weight: 700; font-family: ui-monospace, monospace; }
   .board-header { background: #f5f5f5 !important; border: 1pt solid #888 !important; padding: 4pt 6pt !important; }
   .board-header h3 { font-size: 10.5pt !important; }
   .stat-col { display: none !important; }
-  .print-split-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; direction: rtl !important; }
+  .print-split-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; direction: ltr !important; }
   .print-split-grid > * { direction: ltr !important; }
   tr { break-inside: avoid !important; page-break-inside: avoid !important; }
-  .tot { background: #fafafa !important; border: 1pt solid #888 !important; border-top: none !important; padding: 4pt 6pt !important; font-size: 9.5pt !important; }
-  .ei { width: 50px !important; border: none !important; background: transparent !important; padding: 0 !important; font-weight: bold !important; font-size: 9.5pt !important; }
+  .tot { background: #fafafa !important; border: 1pt solid #888 !important; border-top: none !important; padding: 4pt 6pt !important; font-size: var(--tfs, 9.5pt) !important; }
+  .ei { width: auto !important; max-width: 100% !important; border: none !important; background: transparent !important; padding: 0 !important; font-weight: bold !important; font-size: inherit !important; color: #000 !important; }
   body[data-print="stk"] #labels { display: block !important; }
   body[data-print="stk"] .app { display: none !important; }
   .lb { box-sizing: border-box; overflow: hidden; padding: 1.5mm 2mm; color: #000; font-family: Arial, sans-serif; line-height: 1.15; break-after: page; page-break-after: always; }
@@ -412,6 +422,27 @@ td.s { font-weight: 700; font-family: ui-monospace, monospace; }
         </div>
       </div>
 
+      <!-- Prominent Print Font Size & Preview Sequence Bar (Visible after Download) -->
+      <div class="np" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;margin-bottom:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#166534;">🖨 Print Font Size:</span>
+          <div style="display:inline-flex;gap:3px;background:#fff;padding:2px;border:1px solid #86efac;border-radius:4px;" id="pfs_btns">
+            <button type="button" class="pfs-btn" data-sz="9" style="padding:2px 7px;font-size:11px;font-weight:700;border:none;border-radius:3px;cursor:pointer;">9px</button>
+            <button type="button" class="pfs-btn" data-sz="10" style="padding:2px 7px;font-size:11px;font-weight:700;border:none;border-radius:3px;cursor:pointer;">10px</button>
+            <button type="button" class="pfs-btn" data-sz="11" style="padding:2px 7px;font-size:11px;font-weight:700;border:none;border-radius:3px;cursor:pointer;">11px</button>
+            <button type="button" class="pfs-btn" data-sz="12" style="padding:2px 7px;font-size:11px;font-weight:700;border:none;border-radius:3px;cursor:pointer;">12px</button>
+            <button type="button" class="pfs-btn" data-sz="13" style="padding:2px 7px;font-size:11px;font-weight:700;border:none;border-radius:3px;cursor:pointer;">13px</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#166534;">Unit Print Fill:</span>
+          <div style="display:inline-flex;gap:3px;background:#fff;padding:2px;border:1px solid #86efac;border-radius:4px;" id="play_btns">
+            <button type="button" class="play-btn" data-lay="standard" style="padding:2px 8px;font-size:11px;font-weight:700;border:none;border-radius:3px;cursor:pointer;">⬇️ All The Way Down (Not Split)</button>
+            <button type="button" class="play-btn" data-lay="split" style="padding:2px 8px;font-size:11px;font-weight:700;border:none;border-radius:3px;cursor:pointer;">↔️ 2 Columns</button>
+          </div>
+        </div>
+      </div>
+
       <div class="ph">
         <div id="pinfo">
           <span id="pcc"></span>
@@ -422,6 +453,8 @@ td.s { font-weight: 700; font-family: ui-monospace, monospace; }
           <span id="pco"></span>
           <span id="pdt"></span>
         </div>
+        <div id="pnotes" style="display:none;"></div>
+        <div id="pboards"></div>
       </div>
 
       <div id="out"></div>
@@ -739,7 +772,7 @@ function render() {
   }
 
   if ($("pcc")) {
-    $("pcc").textContent = "Cust code: " + (c.code || "-") + (c.notes ? " · Notes: " + c.notes : "");
+    $("pcc").textContent = "Cust code: " + (c.code || "-");
     if (c.codeColor) {
       $("pcc").style.backgroundColor = c.codeColor;
       $("pcc").style.color = "#0f172a";
@@ -754,9 +787,24 @@ function render() {
     }
   }
   $("pnm").textContent = c.name || "Untitled Customer";
-  $("pun").textContent = unitTitle;
-  $("pdt").textContent = "Date: " + c.date;
+  $("pun").textContent = unitTitle || (used.length > 1 ? ("Units: " + used.join(", ")) : (c.unit || "All Units"));
+  $("pdt").textContent = "Date: " + (c.date || "");
   $("pco").textContent = db.set.co;
+  if ($("pnotes")) {
+    if (c.notes && c.notes.trim()) {
+      $("pnotes").style.display = "block";
+      $("pnotes").innerHTML = "<b>Notes / Remarks:</b> " + esc(c.notes);
+    } else {
+      $("pnotes").style.display = "none";
+    }
+  }
+  if ($("pboards")) {
+    const bInfo = [];
+    if (c.mainBoard) bInfo.push("Main Board: <b>" + esc(c.mainBoard) + "</b>");
+    if (c.backBoard) bInfo.push("Back Board: <b>" + esc(c.backBoard) + " (" + (c.backType || "6") + "mm)</b>");
+    if (c.drawerBottomBoard) bInfo.push("Drawer Bottom: <b>" + esc(c.drawerBottomBoard) + "</b>");
+    $("pboards").innerHTML = bInfo.join(" &nbsp;|&nbsp; ");
+  }
 
   $("usel").textContent = "New parts are currently added to unit: " + c.unit;
   $("units").innerHTML = c.units.map(n =>
@@ -834,65 +882,77 @@ function render() {
     const contentHtml = unitsToRender.map(n => {
       const L = P.map((x, i) => ({ x, i })).filter(o => o.x.u === n);
       if (!L.length) return "";
-      const gb = [];
-      L.forEach(o => {
-        let g = gb.find(z => z.b === o.x.b);
-        if (!g) { g = { b: o.x.b, list: [] }; gb.push(g); }
-        g.list.push(o);
+
+      L.sort((a, b) => {
+        const ra = rank(a.x.p), rb = rank(b.x.p);
+        if (ra !== rb) return ra - rb;
+        const nc = (a.x.p || '').localeCompare(b.x.p || '');
+        if (nc !== 0) return nc;
+        return b.x.l * b.x.w - a.x.l * a.x.w;
       });
 
-      return gb.map(g => {
-        g.list.sort((a, b) => {
-          const ra = rank(a.x.p), rb = rank(b.x.p);
-          if (ra !== rb) return ra - rb;
-          const nc = (a.x.p || '').localeCompare(b.x.p || '');
-          if (nc !== 0) return nc;
-          return b.x.l * b.x.w - a.x.l * a.x.w;
-        });
+      const totalUnitPcs = L.reduce((a, b) => a + b.x.q, 0);
+      const isSplit = db.set.printLayout === "split" || db.set.printLayout === "right-first";
 
-        const shouldSplit = g.list.length > 2;
-        const half = shouldSplit ? Math.ceil(g.list.length / 2) : g.list.length;
-        const c1 = g.list.slice(0, half);
-        const c2 = shouldSplit ? g.list.slice(half) : [];
+      const makeUnitTbl = (items) => {
+        const rws = items.map((o, idx) => {
+          const x = o.x;
+          const pColStyle = x.pColor ? \`background-color:\${x.pColor};color:#0f172a;padding:2px 4px;border-radius:3px;\` : '';
+          return \`<tr>
+            <td style="font-size:11px;text-align:center;color:var(--mute);width:28px;">\${idx + 1}</td>
+            <td style="font-weight:600;"><input class="ei" style="width:130px;font-weight:600;text-align:left;\${pColStyle}" type="text" data-i="\${o.i}" data-f="p" value="\${esc(x.p)}"></td>
+            <td style="font-size:11px;color:var(--mute);"><input class="ei" style="width:110px;font-size:11px;text-align:left;" type="text" data-i="\${o.i}" data-f="b" value="\${esc(x.b)}"></td>
+            <td class="n"><input class="ei" type="number" data-i="\${o.i}" data-f="w" value="\${x.w}"></td>
+            <td class="n"><input class="ei" type="number" data-i="\${o.i}" data-f="l" value="\${x.l}"></td>
+            <td class="n" style="font-weight:700;"><input class="ei" type="number" data-i="\${o.i}" data-f="q" value="\${x.q}"></td>
+            <td class="stat-col">\${over(x.w, x.l) ? WN : '<span style="color:var(--ac)">OK</span>'}</td>
+            <td class="np" style="text-align:right;"><button class="x" data-d="\${o.i}">Delete</button></td>
+          </tr>\`;
+        }).join("");
+        return \`<table>
+          <thead>
+            <tr>
+              <th style="width:28px;text-align:center;">#</th>
+              <th>Part Name</th>
+              <th>Board / Color</th>
+              <th class="n">Width</th>
+              <th class="n">Length</th>
+              <th class="n">Qty</th>
+              <th class="stat-col">Status</th>
+              <th class="np"></th>
+            </tr>
+          </thead>
+          <tbody>\${rws}</tbody>
+        </table>\`;
+      };
 
-        const makeUnitTbl = (items) => {
-          const rws = items.map(o => {
-            const x = o.x;
-            return \`<tr>
-              <td style="font-weight:600;"><input class="ei" style="width:140px;font-weight:600;text-align:left;" type="text" data-i="\${o.i}" data-f="p" value="\${esc(x.p)}"></td>
-              <td class="n"><input class="ei" type="number" data-i="\${o.i}" data-f="w" value="\${x.w}"></td>
-              <td class="n"><input class="ei" type="number" data-i="\${o.i}" data-f="l" value="\${x.l}"></td>
-              <td class="n" style="font-weight:700;"><input class="ei" type="number" data-i="\${o.i}" data-f="q" value="\${x.q}"></td>
-              <td class="stat-col">\${over(x.w, x.l) ? WN : '<span style="color:var(--ac)">OK</span>'}</td>
-              <td class="np" style="text-align:right;"><button class="x" data-d="\${o.i}">Delete</button></td>
-            </tr>\`;
-          }).join("");
-          return \`<table>
-            <thead>
-              <tr>
-                <th>Part Name (Editable)</th>
-                <th class="n">Width (mm)</th>
-                <th class="n">Length (mm)</th>
-                <th class="n">Qty</th>
-                <th class="stat-col">Status</th>
-                <th class="np"></th>
-              </tr>
-            </thead>
-            <tbody>\${rws}</tbody>
-          </table>\`;
-        };
-
+      if (!isSplit) {
         return \`<div class="board">
           <div class="board-header">
-            <h3>Unit: \${esc(n)} — Board: \${esc(g.b)}</h3>
-            <span style="font-size:11px;color:var(--mute)">(\${g.list.reduce((a, b) => a + b.x.q, 0)} pcs)</span>
+            <h3>Unit: \${esc(n)}</h3>
+            <span style="font-size:11px;color:var(--mute)">(\${totalUnitPcs} pcs)</span>
           </div>
-          <div class="sc \${c2.length ? 'print-split-grid' : ''}">
-            <div>\${makeUnitTbl(c1)}</div>
-            \${c2.length ? \`<div>\${makeUnitTbl(c2)}</div>\` : ''}
+          <div class="sc">
+            \${makeUnitTbl(L)}
           </div>
         </div>\`;
-      }).join("");
+      }
+
+      const shouldSplit = L.length > 2;
+      const half = shouldSplit ? Math.ceil(L.length / 2) : L.length;
+      const c1 = L.slice(0, half);
+      const c2 = shouldSplit ? L.slice(half) : [];
+
+      return \`<div class="board">
+        <div class="board-header">
+          <h3>Unit: \${esc(n)}</h3>
+          <span style="font-size:11px;color:var(--mute)">(\${totalUnitPcs} pcs)</span>
+        </div>
+        <div class="sc \${c2.length ? 'print-split-grid' : ''}">
+          <div>\${makeUnitTbl(c1)}</div>
+          \${c2.length ? \`<div>\${makeUnitTbl(c2)}</div>\` : ''}
+        </div>
+      </div>\`;
     }).join("") + sumHtml(unitFilter);
 
     $("out").innerHTML = unitTabsHtml + contentHtml;
@@ -1257,14 +1317,42 @@ if ($("cbt")) $("cbt").onchange = () => {
   save();
 };
 
+function applyPrintFontSize(sz) {
+  const s = +sz || 11;
+  db.set.printFontSize = s;
+  document.documentElement.style.setProperty("--pfs", s + "pt");
+  document.documentElement.style.setProperty("--tfs", (s - 1) + "pt");
+  document.documentElement.style.setProperty("--thfs", (s - 2) + "pt");
+  document.documentElement.style.setProperty("--cpad", (s <= 10 ? "2pt 4pt" : s >= 12 ? "4pt 6pt" : "3pt 5pt"));
+  document.querySelectorAll(".pfs-btn").forEach(b => {
+    const isAct = +b.dataset.sz === s;
+    b.style.background = isAct ? "var(--ac)" : "transparent";
+    b.style.color = isAct ? "var(--aci)" : "var(--ink)";
+  });
+  if ($("pfs_sel")) $("pfs_sel").value = String(s);
+  save();
+}
+
+function applyPrintLayout(lay) {
+  const l = (lay === "split" || lay === "right-first") ? "split" : "standard";
+  db.set.printLayout = l;
+  document.querySelectorAll(".play-btn").forEach(b => {
+    const isAct = b.dataset.lay === l;
+    b.style.background = isAct ? "var(--ac)" : "transparent";
+    b.style.color = isAct ? "var(--aci)" : "var(--ink)";
+  });
+  save();
+  render();
+}
+
+document.querySelectorAll(".pfs-btn").forEach(btn => {
+  btn.onclick = () => applyPrintFontSize(+btn.dataset.sz);
+});
+document.querySelectorAll(".play-btn").forEach(btn => {
+  btn.onclick = () => applyPrintLayout(btn.dataset.lay);
+});
 if ($("pfs_sel")) {
-  $("pfs_sel").onchange = () => {
-    const s = +$("pfs_sel").value || 11;
-    document.documentElement.style.setProperty("--pfs", s + "pt");
-    document.documentElement.style.setProperty("--tfs", (s - 1) + "pt");
-    document.documentElement.style.setProperty("--thfs", (s - 2) + "pt");
-    document.documentElement.style.setProperty("--cpad", (s <= 10 ? "2pt 4pt" : s >= 12 ? "4pt 6pt" : "3pt 5pt"));
-  };
+  $("pfs_sel").onchange = () => applyPrintFontSize(+$("pfs_sel").value);
 }
 
 $("add").onclick = () => {
@@ -1777,6 +1865,8 @@ render();
 ptypes("Cupboard");
 loadPreset();
 autoType();
+applyPrintFontSize(db.set.printFontSize || 11);
+applyPrintLayout(db.set.printLayout || "standard");
 </script>
 </body>
 </html>`;

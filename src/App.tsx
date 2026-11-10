@@ -26,6 +26,7 @@ import { PreviewModal } from './components/PreviewModal';
 import { CuttingListView } from './components/CuttingListView';
 import { ThermalLabelsModal } from './components/ThermalLabelsModal';
 import { PrintReportView } from './components/PrintReportView';
+import { PrintPreviewModal } from './components/PrintPreviewModal';
 import {
   Printer,
   Moon,
@@ -33,6 +34,7 @@ import {
   Laptop,
   Layers,
   Sparkles,
+  Eye,
 } from 'lucide-react';
 
 export default function App() {
@@ -44,9 +46,12 @@ export default function App() {
     messages: string[];
   } | null>(null);
   const [showThermalModal, setShowThermalModal] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [printScope, setPrintScope] = useState<'current' | 'all'>('current');
   const [darkMode, setDarkMode] = useState(false);
-  const [printFontSize, setPrintFontSize] = useState<number>(11);
-  const [printLayout, setPrintLayout] = useState<'right-first' | 'standard'>('right-first');
+  const [printFontSize, setPrintFontSize] = useState<number>(() => db.set.printFontSize || 11);
+  const [printLayout, setPrintLayout] = useState<'standard' | 'right-first' | 'split' | 'full'>(() => db.set.printLayout || 'standard');
+  const [fitSinglePage, setFitSinglePage] = useState<boolean>(() => db.set.fitSinglePage ?? true);
 
   // Synchronize database to localStorage whenever it changes
   useEffect(() => {
@@ -61,6 +66,11 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Synchronize print font size to CSS variable on document
+  useEffect(() => {
+    document.documentElement.style.setProperty('--print-font-size', `${printFontSize}px`);
+  }, [printFontSize]);
 
   const currentCustomer: Customer =
     db.customers.find((c) => c.id === db.cur) || db.customers[0];
@@ -469,8 +479,29 @@ export default function App() {
     reader.readAsText(file);
   };
 
+  const handlePrintFontSizeChange = (size: number) => {
+    setPrintFontSize(size);
+    updateSettings({ printFontSize: size });
+  };
+
+  const handlePrintLayoutChange = (layout: 'standard' | 'right-first' | 'split' | 'full') => {
+    setPrintLayout(layout);
+    updateSettings({ printLayout: layout });
+  };
+
+  const handleFitSinglePageChange = (fit: boolean) => {
+    setFitSinglePage(fit);
+    updateSettings({ fitSinglePage: fit });
+  };
+
   const handleExportStandalone = () => {
-    const htmlContent = generateStandalonePCSoftware(currentCustomer, db.set);
+    const htmlContent = generateStandalonePCSoftware(
+      currentCustomer,
+      { ...db.set, fitSinglePage, printLayout, printFontSize },
+      printFontSize,
+      printLayout,
+      fitSinglePage
+    );
     downloadFile('Cutting-List-Pro-Desktop.html', htmlContent, 'text/html;charset=utf-8;');
   };
 
@@ -494,12 +525,21 @@ export default function App() {
           </button>
 
           <button
+            onClick={() => setShowPrintPreview(true)}
+            className="flex items-center gap-1 hover:text-emerald-200 transition cursor-pointer"
+            title="Open interactive A4 Print Preview with live font size scaling"
+          >
+            <Eye className="w-3.5 h-3.5 text-emerald-300" />
+            <span>Print Preview</span>
+          </button>
+
+          <button
             onClick={() => window.print()}
             className="flex items-center gap-1 hover:text-emerald-200 transition cursor-pointer"
             title="Press Ctrl+P to Print A4 Cutting List"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Press Ctrl+P to Print</span>
+            <span>Print</span>
           </button>
 
           <button
@@ -581,13 +621,18 @@ export default function App() {
               onClearAllParts={handleClearParts}
               onMergeAndSortUnit={handleMergeAndSortUnit}
               onOpenThermalLabels={() => setShowThermalModal(true)}
+              onOpenPrintPreview={() => setShowPrintPreview(true)}
               onDownloadCsv={handleDownloadCsv}
               onDownloadTxt={handleDownloadTxt}
               onCopyTxt={handleCopyTxt}
+              printScope={printScope}
+              onChangePrintScope={setPrintScope}
               printFontSize={printFontSize}
-              onChangePrintFontSize={setPrintFontSize}
+              onChangePrintFontSize={handlePrintFontSizeChange}
               printLayout={printLayout}
-              onChangePrintLayout={setPrintLayout}
+              onChangePrintLayout={handlePrintLayoutChange}
+              fitSinglePage={fitSinglePage}
+              onChangeFitSinglePage={handleFitSinglePageChange}
             />
           </div>
 
@@ -596,8 +641,11 @@ export default function App() {
             customer={currentCustomer}
             settings={db.set}
             viewMode={viewMode}
+            selectedUnitFilter={selectedUnitFilter}
+            printScope={printScope}
             printFontSize={printFontSize}
             printLayout={printLayout}
+            fitSinglePage={fitSinglePage}
           />
         </main>
       </div>
@@ -612,6 +660,25 @@ export default function App() {
           settings={db.set}
           onSaveToUnit={handleSavePreviewParts}
           onDiscard={() => setPreviewData(null)}
+        />
+      )}
+
+      {/* Interactive A4 Print Preview Modal */}
+      {showPrintPreview && (
+        <PrintPreviewModal
+          customer={currentCustomer}
+          settings={db.set}
+          viewMode={viewMode}
+          selectedUnitFilter={selectedUnitFilter}
+          printScope={printScope}
+          onChangePrintScope={setPrintScope}
+          printFontSize={printFontSize}
+          onChangePrintFontSize={handlePrintFontSizeChange}
+          printLayout={printLayout}
+          onChangePrintLayout={handlePrintLayoutChange}
+          fitSinglePage={fitSinglePage}
+          onChangeFitSinglePage={handleFitSinglePageChange}
+          onClose={() => setShowPrintPreview(false)}
         />
       )}
 

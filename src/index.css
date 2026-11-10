@@ -8,17 +8,22 @@
 
 @media print {
   @page {
-    size: auto;
-    margin: 10mm;
+    size: A4 portrait;
+    margin: 6mm 8mm;
   }
   html, body, *, *::before, *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+  html, body, table, th, td, tr, span, div, p {
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
   html, body {
     background: #ffffff !important;
     color: #000000 !important;
-    font-size: 9.5pt !important;
+    font-size: var(--print-font-size, 11px) !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .print\:hidden {
     display: none !important;
@@ -29,6 +34,17 @@
   table {
     border-collapse: collapse !important;
     width: 100% !important;
+    font-size: var(--print-font-size, 11px) !important;
+  }
+  th {
+    font-size: calc(var(--print-font-size, 11px) - 1px) !important;
+    font-weight: 700 !important;
+    background-color: #f3f4f6 !important;
+    line-height: 1.25 !important;
+  }
+  td {
+    font-size: var(--print-font-size, 11px) !important;
+    line-height: 1.25 !important;
   }
   tr {
     page-break-inside: avoid !important;

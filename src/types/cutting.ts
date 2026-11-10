@@ -86,6 +86,9 @@ export interface AppSettings {
   sl: number;        // Sheet Length (mm), default 2440
   sw: number;        // Sheet Width (mm), default 1220
   ws: number;        // Saw Waste %, default 15
+  printFontSize?: number; // Workshop print font size (9-13px)
+  printLayout?: 'standard' | 'right-first' | 'split' | 'full'; // Print column layout
+  fitSinglePage?: boolean; // Fit unit on single A4 page
   presets: Record<string, PresetConfig>;
 }
 

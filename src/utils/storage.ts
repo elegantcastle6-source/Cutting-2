@@ -13,6 +13,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   sl: 2440,
   sw: 1220,
   ws: 15,
+  printFontSize: 11,
+  printLayout: 'standard',
   presets: DEFAULT_PRESETS,
 };
 
@@ -117,6 +119,8 @@ export function loadDatabase(): AppDatabase {
         parsed.set = {
           ...DEFAULT_SETTINGS,
           ...(parsed.set || {}),
+          printFontSize: parsed.set?.printFontSize || 11,
+          printLayout: parsed.set?.printLayout || 'standard',
           presets: loadedPresets,
         };
 
