@@ -1,0 +1,6 @@
+{
+  "name": "Cutting List Pro - Workshop & Sheet Cutting Master",
+  "description": "Professional carpentry cutting list generator, parametric cabinet calculator, sheet consumption optimizer, thermal label printer, and offline workshop suite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

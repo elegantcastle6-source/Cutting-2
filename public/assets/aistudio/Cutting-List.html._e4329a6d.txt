@@ -1,0 +1,1296 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { Customer, AppSettings } from '../types/cutting';
+
+/**
+ * Generates a self-contained, standalone desktop HTML application
+ * that the user can download and run on any Windows/Mac PC completely offline.
+ */
+export function generateStandalonePCSoftware(
+  initialCustomer: Customer,
+  settings: AppSettings
+): string {
+  const exportData = JSON.stringify({
+    customers: [initialCustomer],
+    cur: initialCustomer.id,
+    set: settings
+  });
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cutting List Pro - Desktop Software</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --sf: #ffffff;
+  --ink: #0f172a;
+  --mute: #64748b;
+  --line: #e2e8f0;
+  --ac: #047857;
+  --aci: #ffffff;
+  --ac-bg: #ecfdf5;
+  --ac-border: #a7f3d0;
+  --warn: #dc2626;
+  --warn-bg: #fef2f2;
+  --side: #f1f5f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0f12;
+    --sf: #141b1f;
+    --ink: #f8fafc;
+    --mute: #94a3b8;
+    --line: #243038;
+    --ac: #10b981;
+    --aci: #022c22;
+    --ac-bg: #064e3b33;
+    --ac-border: #065f46;
+    --warn: #f87171;
+    --warn-bg: #450a0a33;
+    --side: #0f1418;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 13.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.app { display: grid; grid-template-columns: 290px 1fr; min-height: 100vh; }
+aside { background: var(--side); border-right: 1px solid var(--line); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+aside h1 { font-size: 1.15rem; margin: 0; font-weight: 800; display: flex; align-items: center; justify-content: space-between; }
+.badge { background: var(--ac); color: var(--aci); font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+#list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: calc(100vh - 270px); }
+.c { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--sf); cursor: pointer; transition: all 0.15s; }
+.c:hover { border-color: var(--ac); }
+.c.on { border-color: var(--ac); background: var(--ac-bg); box-shadow: inset 3px 0 0 var(--ac); }
+.c b { display: block; font-size: 13px; }
+.c small { color: var(--mute); font-family: ui-monospace, monospace; font-size: 11px; }
+main { padding: 16px 20px; max-width: 1120px; width: 100%; margin: 0 auto; }
+section { background: var(--sf); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+h2 { font-size: 0.95rem; margin: 0 0 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; justify-content: space-between; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+label { display: flex; flex-direction: column; font-size: 0.78rem; color: var(--mute); gap: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+input, textarea, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; min-width: 0; outline: none; }
+input:focus, select:focus { border-color: var(--ac); box-shadow: 0 0 0 2px var(--ac-bg); }
+input[type=number] { width: 95px; font-family: ui-monospace, monospace; }
+.w { width: 190px; }
+button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--sf); color: var(--ink); border-radius: 6px; padding: 7px 12px; font-weight: 600; font-size: 12.5px; transition: all 0.15s; }
+button:hover { background: var(--bg); }
+button.p { background: var(--ac); color: var(--aci); border-color: var(--ac); font-weight: 700; }
+button.p:hover { opacity: 0.92; }
+button.x { color: var(--warn); border: none; background: transparent; padding: 3px 8px; font-size: 12px; }
+button.x:hover { text-decoration: underline; }
+.sc { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.72rem; color: var(--mute); text-transform: uppercase; background: var(--bg); font-weight: 700; letter-spacing: 0.03em; }
+.n { text-align: right; font-family: ui-monospace, monospace; }
+td.s { font-weight: 700; font-family: ui-monospace, monospace; }
+.board { margin-bottom: 16px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.board-header { background: var(--bg); padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+.board-header h3 { margin: 0; font-size: 0.92rem; font-weight: 700; }
+.tot { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 12px; background: var(--bg); border-top: 1px solid var(--line); font-family: ui-monospace, monospace; font-size: 12px; }
+.tot b { font-size: 1rem; color: var(--ac); }
+.note { color: var(--mute); font-size: 0.8rem; margin: 6px 0 0; }
+.ei { width: 78px; padding: 3px 6px; font-family: ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; background: var(--sf); }
+.top-bar { background: #065f46; color: #fff; padding: 7px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; }
+.merged-bar { background: var(--ac-bg); border: 1px solid var(--ac-border); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+.merged-bar-title { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--ac); margin-bottom: 8px; }
+.pill-badge { font-size: 10px; background: var(--ac); color: var(--aci); padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: 700; }
+.alert-box { padding: 8px 12px; border-radius: 6px; background: var(--warn-bg); border: 1px solid var(--warn); color: var(--warn); font-size: 12px; margin: 8px 0; }
+.ph { display: none; }
+#labels { display: none; }
+
+@media (max-width: 820px) {
+  .app { grid-template-columns: 1fr; }
+  aside { border-right: none; border-bottom: 1px solid var(--line); }
+  #list { max-height: 180px; }
+}
+
+/* PRINT MEDIA STYLES - A4 PRO CUTTING LIST */
+@media print {
+  body { background: #fff !important; color: #000 !important; font-size: 10.5pt !important; font-family: Arial, sans-serif !important; }
+  .app, .top-bar { display: block !important; }
+  aside, .np { display: none !important; }
+  main { padding: 0 !important; max-width: none !important; margin: 0 !important; }
+  section { border: none !important; padding: 0 !important; margin: 0 0 12pt 0 !important; box-shadow: none !important; background: transparent !important; }
+  .ph { display: block !important; border-bottom: 2pt solid #000 !important; padding-bottom: 6pt !important; margin-bottom: 10pt !important; }
+  #pinfo { display: grid !important; grid-template-columns: 1fr auto 1fr !important; align-items: baseline !important; font-weight: bold !important; }
+  #pcc { font-size: 10pt !important; text-align: left !important; }
+  #pnm { font-size: 18pt !important; text-align: center !important; font-weight: 800 !important; }
+  #pun { font-size: 14pt !important; text-align: right !important; }
+  .phr { display: flex !important; justify-content: space-between !important; align-items: baseline !important; margin-top: 3pt !important; font-size: 11pt !important; font-weight: bold !important; color: #333 !important; }
+  table { width: 100% !important; border-collapse: collapse !important; font-size: 9.5pt !important; table-layout: auto !important; }
+  th, td { border: 1pt solid #888 !important; color: #000 !important; padding: 3pt 5pt !important; white-space: normal !important; }
+  th { background: #f2f2f2 !important; font-weight: bold !important; font-size: 8.5pt !important; }
+  .board { border: none !important; break-inside: avoid !important; page-break-inside: avoid !important; margin-bottom: 12pt !important; }
+  .board-header { background: #f5f5f5 !important; border: 1pt solid #888 !important; padding: 4pt 6pt !important; }
+  .board-header h3 { font-size: 10.5pt !important; }
+  tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+  .tot { background: #fafafa !important; border: 1pt solid #888 !important; border-top: none !important; padding: 4pt 6pt !important; font-size: 9.5pt !important; }
+  .ei { width: 50px !important; border: none !important; background: transparent !important; padding: 0 !important; font-weight: bold !important; font-size: 9.5pt !important; }
+  
+  /* Thermal labels print */
+  body[data-print="stk"] #labels { display: block !important; }
+  body[data-print="stk"] .app { display: none !important; }
+  .lb { box-sizing: border-box; overflow: hidden; padding: 1.5mm 2mm; color: #000; font-family: Arial, sans-serif; line-height: 1.15; break-after: page; page-break-after: always; }
+  .lb:last-child { break-after: auto; page-break-after: auto; }
+  @page { size: A4; margin: 10mm; }
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar np">
+  <div>Cutting List Pro (Offline PC Edition) — All data saved locally on your computer</div>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <span>Press Ctrl+P to Print</span>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="np">
+    <h1>
+      <span>Cutting List</span>
+      <span class="badge">PC PRO</span>
+    </h1>
+    <button class="p" id="newc">+ New Customer</button>
+    <input id="srch" placeholder="Search customer or code...">
+    <div id="list"></div>
+    <div class="row">
+      <button id="bk" style="flex:1;">Backup All</button>
+      <button id="rs" style="flex:1;">Restore</button>
+      <input type="file" id="rf" accept=".json" hidden>
+    </div>
+    <p class="note">Everything runs 100% offline. No internet connection needed.</p>
+  </aside>
+
+  <!-- Main View -->
+  <main>
+    <!-- Customer & Workshop Order Details -->
+    <section class="np">
+      <h2>
+        <span>Customer & Workshop Order</span>
+        <button class="x" id="delc">Delete Customer</button>
+      </h2>
+      <div class="row">
+        <label>Cust Code<input id="cc" style="width:110px" placeholder="C-104"></label>
+        <label>Customer Name<input id="cn" class="w" style="width:230px" placeholder="Ahmed Al Mansoori"></label>
+        <label>Order Date<input type="date" id="dt"></label>
+        <label>Order Notes<input id="nt" style="width:240px" placeholder="Master Bedroom, Hinged..."></label>
+      </div>
+
+      <!-- Workshop Order Board Materials -->
+      <div class="merged-bar" style="margin-top:12px;">
+        <div class="merged-bar-title">
+          <span>Workshop Order Board Materials</span>
+          <span class="pill-badge">Synced with Calculator</span>
+        </div>
+        <div class="row">
+          <label><b>Main Board 18mm Name</b><input id="cb" class="w" placeholder="Color 273 18mm"></label>
+          <label id="cb6lbl"><b>Back Board 18mm / 6mm Name</b><input id="cb6" class="w" placeholder="Color 273 6mm"></label>
+          <label>Back Panel Option
+            <select id="cbt">
+              <option value="6">6mm Back Panel</option>
+              <option value="18">18mm Back Panel</option>
+              <option value="0">No Back Panel</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <!-- Company & Sheet Setup -->
+      <div class="row" style="margin-top:6px;">
+        <label>Company Name<input id="co" style="width:280px" placeholder="AL TASMEEM CARPENTRY"></label>
+        <label>Sheet Length (mm)<input type="number" id="sl" value="2440"></label>
+        <label>Sheet Width (mm)<input type="number" id="sw" value="1220"></label>
+        <label>Saw Waste %<input type="number" id="ws" value="15"></label>
+      </div>
+    </section>
+
+    <!-- Cabinet Units -->
+    <section class="np">
+      <h2>Cabinet Units</h2>
+      <div class="row" id="units"></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="p" id="ua">+ Add Unit</button>
+        <button id="ur">Rename</button>
+        <button id="uc">Copy Unit</button>
+        <button id="ud">Delete Unit</button>
+      </div>
+      <p class="note" id="usel"></p>
+    </section>
+
+    <!-- Add One Part -->
+    <section class="np">
+      <h2>Add Single Part (Width First, Then Length)</h2>
+      <div class="row">
+        <label>Board / Color<input id="b" class="w" list="bl" placeholder="Color 273 18mm"></label>
+        <input id="u" type="hidden">
+        <label>Part Name<input id="p" class="w" list="pl" placeholder="Side Panel"></label>
+        <label>Width (mm)<input type="number" id="w" inputmode="numeric"></label>
+        <label>Length (mm)<input type="number" id="l" inputmode="numeric"></label>
+        <label>Qty<input type="number" id="q" value="1" inputmode="numeric"></label>
+        <button class="p" id="add">Add Part</button>
+      </div>
+      <datalist id="bl"></datalist>
+      <datalist id="pl">
+        <option>Side Panel</option><option>Top</option><option>Bottom</option><option>Divider</option>
+        <option>Fix Shelves</option><option>Adjust Shelves</option><option>Door</option><option>Face</option>
+        <option>Drawer sides</option><option>Drawer front</option><option>Drawer back</option><option>Drawer bottom</option>
+        <option>Back 18mm</option><option>Back 6mm</option><option>Wall Panel</option>
+      </datalist>
+    </section>
+
+    <!-- Parametric Cabinet Generator -->
+    <section class="np">
+      <h2>
+        <span>Parametric Cabinet Calculator</span>
+        <div style="display:flex;gap:6px;">
+          <button id="psave">Save Rules</button>
+          <button id="pnew">+ New Type</button>
+          <button id="padv">More Settings</button>
+        </div>
+      </h2>
+
+      <div class="row" style="margin-bottom:12px;">
+        <label>Preset Unit Type<select id="ptype"></select></label>
+      </div>
+
+      <!-- Primary Dimensions -->
+      <div class="row">
+        <input id="cu" type="hidden">
+        <label>Cabinets (Qty)<input type="number" id="cn2" value="1"></label>
+        <label>Width (mm)<input type="number" id="cw" value="1000"></label>
+        <label>Height (mm)<input type="number" id="ch" value="2100"></label>
+        <label>Depth (mm)<input type="number" id="cd" value="580"></label>
+        <label>Board Thickness (mm)<input type="number" id="ct" value="18"></label>
+        <label class="stk">Doors<input type="number" id="cdn" value="2"></label>
+      </div>
+
+      <!-- Shelves & Drawers -->
+      <div class="row" style="margin-top:10px;">
+        <label class="stk">Fix Shelves<input type="number" id="cf" value="0"></label>
+        <label class="stk">Adjust Shelves<input type="number" id="cas" value="3"></label>
+        <label id="cdyl">Drawer Option
+          <select id="cdy">
+            <option value="no">No Drawer</option>
+            <option value="yes">With Drawer</option>
+          </select>
+        </label>
+        <label class="drw">Drawers in Box<input type="number" id="cdr" value="0"></label>
+        <label>Drawer Layout
+          <select id="clay">
+            <option value="stack">Stacked (Cupboard)</option>
+            <option value="side">Side by Side (Drawer Unit)</option>
+          </select>
+        </label>
+        <label>Door / Front Gap (mm)<input type="number" id="cfw" value="4"></label>
+      </div>
+
+      <!-- Advanced Carpentry Offsets (Collapsible) -->
+      <div id="adv-box" style="display:none;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--mute);margin-bottom:8px;">Detailed Carpentry Rules</div>
+        <div class="row">
+          <label style="color:var(--ac);font-weight:700;">Drawer Side Leave Space (mm)<input type="number" id="cdwr" value="50" title="Hinge clearance reduction per side (default: 50mm)"></label>
+          <label style="color:#0f766e;font-weight:700;">Connecter Side (mm)<input type="number" id="ccn" placeholder="18 or 17" title="Adjustable deduction for connector side panel (e.g. 17 or 18mm)"></label>
+          <label class="drw">Slide Channel (mm)<input type="number" id="csl" value="26" title="Pair of slide runners thickness"></label>
+          <label class="drw">Drawer Depth Sub (mm)<input type="number" id="cdsr" value="100" title="Recess from cupboard depth D"></label>
+          <label class="drw">Drawer Height (mm)<input type="number" id="cdh" value="140"></label>
+          <label>Inside Box Mode
+            <select id="cdmode"><option value="door">Each Door Space</option><option value="full">One Full Open Space</option></select>
+          </label>
+          <label class="drw">Drawers Placement
+            <select id="cdsec"><option value="all">Every Door Space</option><option value="one">One Door Space Only</option></select>
+          </label>
+          <label class="drw">Drawer Bottom Board
+            <select id="cdbk"><option value="6">6mm Board</option><option value="18">18mm Board</option></select>
+          </label>
+          <label class="drw">6mm Bottom Add W/L<input type="number" id="cdb6w" value="17"></label>
+          <label>Skirting Height (mm)<input type="number" id="cskr" value="0"></label>
+          <label>Back Width: Inner + (mm)<input type="number" id="cbw" value="0"></label>
+          <label>Back Height: H - (mm)<input type="number" id="cbh" value="10"></label>
+          <label>Fix Shelf Depth - (mm)<input type="number" id="cfr" value="20"></label>
+          <label>Adjust Shelf Depth - (mm)<input type="number" id="car" value="36"></label>
+          <label>Split Tall Pieces At (mm)<input type="number" id="csp" placeholder="Auto"></label>
+          <label>Lipping per edge (mm)<input type="number" id="clp" value="0"></label>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;">
+        <span class="note">Side = Depth × Height. Doors take off gaps and lipping.</span>
+        <button class="p" id="gen" style="font-size:13px;padding:9px 16px;">Preview Cabinet Pieces</button>
+      </div>
+    </section>
+
+    <!-- Cabinet Preview Modal / Section -->
+    <section class="np" id="pv" style="display:none;border:2px solid var(--ac);background:var(--sf);">
+      <h2>
+        <span>Cabinet Preview: Review & Save to <b id="pvu"></b></span>
+        <div style="display:flex;gap:8px;">
+          <button id="pvd">Discard</button>
+          <button class="p" id="pvs">Save to Unit</button>
+        </div>
+      </h2>
+      <div id="pvm"></div>
+      <div class="sc" style="margin-top:8px;">
+        <table id="pvt"></table>
+      </div>
+    </section>
+
+    <!-- Cutting List & Reports View -->
+    <section>
+      <div class="row np" style="margin-bottom:12px;justify-content:space-between;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="v1" class="p">By Unit</button>
+          <button id="v2">By Board (Cutting List)</button>
+          <button class="p" id="prt" style="font-weight:700;">🖨 Print List (A4)</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <label style="margin:0;">Stickers
+            <select id="ssz">
+              <option value="60x40">60 × 40 mm</option>
+              <option value="50x30">50 × 30 mm</option>
+              <option value="80x50">80 × 50 mm</option>
+              <option value="100x50">100 × 50 mm</option>
+              <option value="100x75">100 × 75 mm</option>
+            </select>
+          </label>
+          <label style="margin:0;">Scope
+            <select id="sfor">
+              <option value="cur">Current Unit</option>
+              <option value="all">All Units</option>
+            </select>
+          </label>
+          <button class="p" id="stk">Print Stickers</button>
+          <button id="csv">Download CSV</button>
+          <button id="txt">Download Text</button>
+          <button id="cpy">Copy Text</button>
+          <button id="clr" style="color:var(--warn);">Clear Parts</button>
+        </div>
+      </div>
+
+      <!-- Printable Header (Rendered on paper output) -->
+      <div class="ph">
+        <div id="pinfo">
+          <span id="pcc"></span>
+          <span id="pnm"></span>
+          <span id="pun"></span>
+        </div>
+        <div class="phr">
+          <span id="pco"></span>
+          <span id="pdt"></span>
+        </div>
+      </div>
+
+      <!-- Main Parts Output -->
+      <div id="out"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Stickers thermal print container -->
+<div id="labels"></div>
+
+<script>
+// --- Safe DOM access helpers ---
+const $ = id => document.getElementById(id);
+const val = (id, def = "") => { const el = $(id); return el ? el.value : def; };
+const num = (id, def = 0) => { const el = $(id); return el && el.value !== "" ? (+el.value || 0) : def; };
+const setVal = (id, v) => { const el = $(id); if (el) el.value = (v === undefined || v === null ? "" : v); };
+const esc = s => String(s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const KEY = "cutsoft_v1";
+let db = null;
+try { db = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
+if (!db || !Array.isArray(db.customers)) db = ${exportData};
+
+const today = () => new Date().toISOString().slice(0, 10);
+function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e) {} }
+const cur = () => db.customers.find(c => c.id === db.cur) || db.customers[0];
+
+function newCust() {
+  const c = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    code: "",
+    name: "",
+    date: today(),
+    notes: "",
+    units: ["Cupboard 1"],
+    unit: "Cupboard 1",
+    parts: [],
+    mainBoard: "Color 273 18mm",
+    backBoard: "Color 273 6mm",
+    backType: "6"
+  };
+  db.customers.unshift(c);
+  db.cur = c.id;
+  save();
+  fill();
+  renderList();
+  render();
+  if ($("cn")) $("cn").focus();
+}
+
+if (!db.customers.length) newCust();
+if (!cur()) db.cur = db.customers[0].id;
+
+function fill() {
+  const c = cur();
+  setVal("cc", c.code);
+  setVal("cn", c.name);
+  setVal("dt", c.date);
+  setVal("nt", c.notes || "");
+  setVal("co", db.set.co);
+  setVal("sl", db.set.sl);
+  setVal("sw", db.set.sw);
+  setVal("ws", db.set.ws);
+  setVal("cb", c.mainBoard || "Color 273 18mm");
+  setVal("cb6", c.backBoard || "Color 273 6mm");
+  setVal("cbt", c.backType || "6");
+}
+
+function renderList() {
+  const q = val("srch").toLowerCase();
+  const filtered = db.customers.filter(c => (c.name + " " + c.code).toLowerCase().includes(q));
+  $("list").innerHTML = filtered.map(c =>
+    \`<div class="c \${c.id === db.cur ? "on" : ""}" data-id="\${c.id}">
+      <b>\${esc(c.name || "Untitled Customer")}</b>
+      <small>Code \${esc(c.code || "-")} · \${(c.parts || []).length} parts · \${esc(c.date)}</small>
+    </div>\`
+  ).join("") || '<p class="note">No customer found.</p>';
+
+  $("list").querySelectorAll(".c").forEach(d => {
+    d.onclick = () => {
+      db.cur = d.dataset.id;
+      save();
+      fill();
+      renderList();
+      render();
+    };
+  });
+}
+
+var pend = [], pendMsg = [], view = "unit";
+function un() { return cur().unit || "Unit 1"; }
+function over(w, l) {
+  const sl = +db.set.sl || 2440;
+  const sw = +db.set.sw || 1220;
+  return Math.max(w, l) > sl || Math.min(w, l) > sw;
+}
+
+function migrate() {
+  db.customers.forEach(c => {
+    c.parts = c.parts || [];
+    c.parts.forEach(x => { if (!x.u) x.u = "Cupboard 1"; });
+    if (!Array.isArray(c.units) || !c.units.length) {
+      c.units = [...new Set(c.parts.map(x => x.u))];
+      if (!c.units.length) c.units = ["Cupboard 1"];
+    }
+    c.parts.forEach(x => { if (!c.units.includes(x.u)) c.units.push(x.u); });
+    if (!c.units.includes(c.unit)) c.unit = c.units[0];
+    if (!c.mainBoard) c.mainBoard = "Color 273 18mm";
+    if (!c.backBoard) c.backBoard = "Color 273 6mm";
+    if (!c.backType) c.backType = "6";
+  });
+}
+
+function shs(ar) { return ar * (1 + (+db.set.ws || 0) / 100) / ((+db.set.sl * +db.set.sw) / 1e6); }
+
+function sumHtml() {
+  const g = groups();
+  const rows = Object.entries(g).map(([b, list]) => {
+    let pcs = 0, ar = 0;
+    list.forEach(x => { pcs += x.q; ar += x.q * x.l * x.w / 1e6; });
+    const sh = shs(ar);
+    return \`<tr>
+      <td style="font-weight:600;">\${esc(b)}</td>
+      <td class="n">\${pcs}</td>
+      <td class="n">\${ar.toFixed(2)} m²</td>
+      <td class="n"><b>\${Math.ceil(sh)}</b> <small style="color:var(--mute)">(\${sh.toFixed(2)})</small></td>
+    </tr>\`;
+  }).join("");
+
+  return \`<div class="board" style="margin-top:20px;">
+    <div class="board-header"><h3>Sheet Consumption Summary (All Units) — Stock: \${db.set.sl} × \${db.set.sw} mm (+\${db.set.ws}% Waste)</h3></div>
+    <div class="sc"><table><thead><tr><th>Board Material</th><th class="n">Pieces</th><th class="n">Total Area (m²)</th><th class="n">Sheets Needed</th></tr></thead><tbody>\${rows}</tbody></table></div>
+  </div>\`;
+}
+
+function groups() {
+  const g = {};
+  (cur().parts || []).forEach(x => { (g[x.b] = g[x.b] || []).push(x); });
+  return g;
+}
+
+function tagStr(r) {
+  return Object.entries(r.t).map(([u, ps]) => u + ": " + Object.entries(ps).map(([p, q]) => p + " ×" + q).join(", ")).join(" | ");
+}
+
+function merged(list) {
+  const m = {};
+  list.forEach(x => {
+    const k = x.w + "x" + x.l;
+    const e = m[k] = m[k] || { l: x.l, w: x.w, q: 0, t: {} };
+    e.q += x.q;
+    const U = x.u || "General";
+    e.t[U] = e.t[U] || {};
+    e.t[U][x.p] = (e.t[U][x.p] || 0) + x.q;
+  });
+  return Object.values(m).sort((a, b) => b.l * b.w - a.l * a.w);
+}
+
+function splitLen(L, sl, fr, manual, ref) {
+  if (manual > 0 && ref > 0) {
+    const a = Math.round(manual * L / ref);
+    if (a > 0 && a < L) return { a: a, b: Math.round(L) - a, shelf: true };
+  }
+  const c = fr.map(f => f * L).filter(x => x <= sl && L - x <= sl).sort((p, q) => Math.abs(p - L / 2) - Math.abs(q - L / 2));
+  const a = Math.round(c.length ? c[0] : L / 2);
+  return { a: a, b: Math.round(L) - a, shelf: c.length > 0 };
+}
+
+function is6(x) { return /(^|[^\\d])6\\s*mm/i.test(x.b); }
+
+function showPreview() {
+  if (!$("pv")) return;
+  $("pv").style.display = "block";
+  $("pvu").textContent = un();
+  $("pvt").innerHTML = \`<thead>
+    <tr>
+      <th>Part Name</th>
+      <th>Board Material</th>
+      <th class="n">Width (mm)</th>
+      <th class="n">Length (mm)</th>
+      <th class="n">Qty</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    \${pend.map((x, i) => \`<tr>
+      <td style="font-weight:600;">\${esc(x.p)}</td>
+      <td style="color:var(--mute)">\${esc(x.b)}</td>
+      <td class="n"><input class="ei" type="number" data-i="\${i}" data-f="w" value="\${x.w}"></td>
+      <td class="n"><input class="ei" type="number" data-i="\${i}" data-f="l" value="\${x.l}"></td>
+      <td class="n"><input class="ei" type="number" data-i="\${i}" data-f="q" value="\${x.q}"></td>
+      <td>\${over(x.w, x.l) ? '<span style="color:var(--warn);font-weight:bold;">⚠ Exceeds Sheet</span>' : '<span style="color:var(--ac)">OK</span>'}</td>
+    </tr>\`).join("")}
+  </tbody>\`;
+
+  $("pvt").querySelectorAll(".ei").forEach(inp => {
+    inp.onchange = () => {
+      const idx = +inp.dataset.i;
+      const f = inp.dataset.f;
+      pend[idx][f] = +inp.value || 0;
+      showPreview();
+    };
+  });
+
+  $("pvm").innerHTML = pendMsg.length
+    ? \`<div class="alert-box">\${pendMsg.map(esc).join("<br>")}</div>\`
+    : "";
+  $("pv").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function render() {
+  migrate();
+  const c = cur();
+  save();
+
+  setVal("pco", db.set.co);
+  const used = c.units.filter(n => c.parts.some(x => x.u === n));
+  const one = used.length === 1 ? used[0] : "";
+
+  $("pcc").textContent = "Cust code: " + (c.code || "-") + (c.notes ? " · Notes: " + c.notes : "");
+  $("pnm").textContent = c.name || "Untitled Customer";
+  $("pun").textContent = one;
+  $("pdt").textContent = "Date: " + c.date;
+  $("pco").textContent = db.set.co;
+
+  $("usel").textContent = "New parts are currently added to unit: " + c.unit;
+  $("units").innerHTML = c.units.map(n =>
+    \`<button class="\${n === c.unit ? "p" : ""}" data-u="\${esc(n)}">\${esc(n)}</button>\`
+  ).join("");
+  $("units").querySelectorAll("button").forEach(bt => {
+    bt.onclick = () => {
+      c.unit = bt.dataset.u;
+      autoType();
+      render();
+    };
+  });
+
+  $("v1").className = view !== "board" ? "p" : "";
+  $("v2").className = view === "board" ? "p" : "";
+
+  const P = c.parts;
+  $("bl").innerHTML = [...new Set(P.map(x => x.b))].map(x => \`<option value="\${esc(x)}">\`).join("");
+
+  if (!P.length) {
+    $("out").innerHTML = '<p class="note" style="padding:20px 0;text-align:center;">No parts added yet. Add a single part or use Parametric Cabinet Calculator above.</p>';
+    return;
+  }
+
+  const WN = '<span style="color:var(--warn);font-weight:bold;">⚠ Exceeds Sheet</span>';
+
+  if (view !== "board") {
+    // Render by Unit
+    $("out").innerHTML = c.units.map(n => {
+      const L = P.map((x, i) => ({ x, i })).filter(o => o.x.u === n);
+      if (!L.length) return "";
+      const gb = [];
+      L.forEach(o => {
+        let g = gb.find(z => z.b === o.x.b);
+        if (!g) { g = { b: o.x.b, list: [] }; gb.push(g); }
+        g.list.push(o);
+      });
+
+      return gb.map(g => {
+        const rows = g.list.map(o => {
+          const x = o.x;
+          return \`<tr>
+            <td style="font-weight:600;">\${esc(x.p)}</td>
+            <td class="n"><input class="ei" type="number" data-i="\${o.i}" data-f="w" value="\${x.w}"></td>
+            <td class="n"><input class="ei" type="number" data-i="\${o.i}" data-f="l" value="\${x.l}"></td>
+            <td class="n"><input class="ei" type="number" data-i="\${o.i}" data-f="q" value="\${x.q}"></td>
+            <td>\${over(x.w, x.l) ? WN : '<span style="color:var(--ac)">OK</span>'}</td>
+            <td class="np" style="text-align:right;"><button class="x" data-d="\${o.i}">Delete</button></td>
+          </tr>\`;
+        }).join("");
+
+        return \`<div class="board">
+          <div class="board-header">
+            <h3>Unit: \${esc(n)} — Board: \${esc(g.b)}</h3>
+            <span style="font-size:11px;color:var(--mute)">(\${g.list.reduce((a, b) => a + b.x.q, 0)} pcs)</span>
+          </div>
+          <div class="sc">
+            <table>
+              <thead>
+                <tr>
+                  <th>Part Name</th>
+                  <th class="n">Width (mm)</th>
+                  <th class="n">Length (mm)</th>
+                  <th class="n">Qty</th>
+                  <th>Status</th>
+                  <th class="np"></th>
+                </tr>
+              </thead>
+              <tbody>\${rows}</tbody>
+            </table>
+          </div>
+        </div>\`;
+      }).join("");
+    }).join("") + sumHtml();
+
+    $("out").querySelectorAll(".ei").forEach(inp => {
+      inp.onchange = () => {
+        cur().parts[+inp.dataset.i][inp.dataset.f] = +inp.value || 0;
+        render();
+      };
+    });
+    $("out").querySelectorAll("[data-d]").forEach(btn => {
+      btn.onclick = () => {
+        cur().parts.splice(+btn.dataset.d, 1);
+        renderList();
+        render();
+      };
+    });
+    return;
+  }
+
+  // Render by Board (Cutting List)
+  $("out").innerHTML = Object.entries(groups()).map(([b, list]) => {
+    let pcs = 0, area = 0;
+    const rows = merged(list).map(r => {
+      pcs += r.q;
+      area += r.q * r.l * r.w / 1e6;
+      return \`<tr>
+        <td class="s">\${r.w} × \${r.l}</td>
+        <td class="n" style="font-weight:700;">\${r.q}</td>
+        <td style="font-size:11.5px;">\${esc(tagStr(r))}</td>
+        <td>\${over(r.w, r.l) ? WN : '<span style="color:var(--ac)">OK</span>'}</td>
+        <td class="np" style="text-align:right;"><button class="x" data-b="\${esc(b)}" data-k="\${r.w}x\${r.l}">Delete</button></td>
+      </tr>\`;
+    }).join("");
+
+    const wf = 1 + (+db.set.ws || 0) / 100;
+    const sA = (+db.set.sl * +db.set.sw) / 1e6;
+    const totalSheets = Math.ceil(area * wf / sA);
+
+    return \`<div class="board">
+      <div class="board-header">
+        <h3>Board: \${esc(b)}</h3>
+        <span style="font-size:11px;color:var(--mute)">\${used.length > 1 ? "Used in: " + esc([...new Set(list.map(x => x.u))].join(", ")) : ""}</span>
+      </div>
+      <div class="sc">
+        <table>
+          <thead>
+            <tr>
+              <th>Width × Length (mm)</th>
+              <th class="n">Qty</th>
+              <th>Used For (Unit: Part × Qty)</th>
+              <th>Status</th>
+              <th class="np"></th>
+            </tr>
+          </thead>
+          <tbody>\${rows}</tbody>
+        </table>
+      </div>
+      <div class="tot">
+        <span>Total Pieces: <b>\${pcs}</b></span>
+        <span>Net Area: <b>\${area.toFixed(2)} m²</b></span>
+        <span>Sheets Needed (+\${db.set.ws}% waste): <b>\${totalSheets}</b></span>
+      </div>
+    </div>\`;
+  }).join("");
+
+  $("out").querySelectorAll(".x").forEach(btn => {
+    btn.onclick = () => {
+      cur().parts = cur().parts.filter(x => !(x.b === btn.dataset.b && (x.w + "x" + x.l) === btn.dataset.k));
+      renderList();
+      render();
+    };
+  });
+}
+
+function dl(name, text, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+const fname = ext => "cutting-list-" + ((cur().name || "customer").replace(/[^\\w\\-]+/g, "_")) + "-" + cur().date + "." + ext;
+
+function txt() {
+  const c = cur();
+  let t = db.set.co + "\\nCust code: " + c.code + "  Name: " + c.name + "  Date: " + c.date + "\\n";
+  if (view !== "board") {
+    c.units.forEach(n => {
+      t += "\\nUnit: " + n + "\\n";
+      c.parts.filter(x => x.u === n).forEach(x => {
+        t += x.p + ": " + x.w + " x " + x.l + " mm  Qty " + x.q + "  (" + x.b + ")\\n";
+      });
+    });
+  } else {
+    Object.entries(groups()).forEach(([b, l]) => {
+      t += "\\nBoard: " + b + "\\n";
+      merged(l).forEach(r => {
+        t += r.w + " x " + r.l + " mm  Qty " + r.q + "  (" + tagStr(r) + ")\\n";
+      });
+    });
+  }
+  return t;
+}
+
+function csv() {
+  const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+  let t;
+  if (view !== "board") {
+    t = "Unit,Part,Board,Width,Length,Qty\\r\\n";
+    cur().parts.forEach(x => {
+      t += [q(x.u), q(x.p), q(x.b), x.w, x.l, x.q].join(",") + "\\r\\n";
+    });
+  } else {
+    t = "Board,Width,Length,Qty,Used for\\r\\n";
+    Object.entries(groups()).forEach(([b, l]) => {
+      merged(l).forEach(r => {
+        t += [q(b), r.w, r.l, r.q, q(tagStr(r))].join(",") + "\\r\\n";
+      });
+    });
+  }
+  return "\\ufeff" + t;
+}
+
+function nextName() {
+  const base = (un().replace(/\\s*\\d+$/, "") || "Unit");
+  let n = 1;
+  while (cur().units.includes(base + " " + n)) n++;
+  return base + " " + n;
+}
+
+function autoType() {
+  const m = Object.keys(db.set.presets).filter(k => un().toLowerCase().startsWith(k.toLowerCase())).sort((a, b) => b.length - a.length)[0];
+  if (m) {
+    if ($("ptype")) $("ptype").value = m;
+    loadPreset();
+  }
+}
+
+function askName(msg, def) {
+  const n = (prompt(msg, def) || "").trim();
+  if (!n) return null;
+  if (cur().units.includes(n)) { alert("This unit name already exists."); return null; }
+  return n;
+}
+
+$("ua").onclick = () => {
+  const n = askName("Unit name:", nextName());
+  if (!n) return;
+  cur().units.push(n);
+  cur().unit = n;
+  autoType();
+  renderList();
+  render();
+};
+
+$("ur").onclick = () => {
+  const o = un(), n = askName("New name for " + o + ":", o + " ");
+  if (!n) return;
+  cur().units = cur().units.map(x => x === o ? n : x);
+  cur().parts.forEach(x => { if (x.u === o) x.u = n; });
+  cur().unit = n;
+  render();
+};
+
+$("uc").onclick = () => {
+  const o = un(), n = askName("Copy all parts of " + o + " to:", nextName());
+  if (!n) return;
+  cur().units.push(n);
+  cur().parts.filter(x => x.u === o).forEach(x => cur().parts.push({ ...x, u: n }));
+  cur().unit = n;
+  renderList();
+  render();
+};
+
+$("ud").onclick = () => {
+  const o = un();
+  if (cur().units.length < 2) { alert("Keep at least one unit."); return; }
+  if (confirm("Delete unit " + o + " and all its parts?")) {
+    cur().parts = cur().parts.filter(x => x.u !== o);
+    cur().units = cur().units.filter(x => x !== o);
+    cur().unit = cur().units[0];
+    renderList();
+    render();
+  }
+};
+
+function stkClean() {
+  delete document.body.dataset.print;
+  $("labels").innerHTML = "";
+  const e = document.getElementById("pgs");
+  if (e) e.remove();
+}
+
+$("stk").onclick = () => {
+  const c = cur();
+  let sz = val("ssz", "60x40");
+  const m = sz.match(/^(\\d+(?:\\.\\d+)?)\\s*[x×]\\s*(\\d+(?:\\.\\d+)?)$/i);
+  if (!m) return;
+  const W = +m[1], H = +m[2], k = Math.min(W / 50, H / 30), f = n => (n * k).toFixed(2) + "mm";
+  const units = val("sfor") === "all" ? c.units : [c.unit];
+  let html = "", n = 0;
+  units.forEach(u => {
+    c.parts.filter(x => x.u === u && x.q > 0).forEach(x => {
+      for (let i = 1; i <= x.q; i++) {
+        n++;
+        html += \`<div class="lb">
+          <div style="font-size:\${f(2.7)};display:flex;justify-content:space-between"><span>\${esc(c.code)}</span><b>\${esc(c.name)}</b></div>
+          <div style="font-size:\${f(3.5)};font-weight:bold;margin-top:\${f(0.5)}">\${esc(u)} – \${esc(x.p)}</div>
+          <div style="font-size:\${f(5.5)};font-weight:bold;margin:\${f(0.6)} 0;white-space:nowrap">\${x.w} × \${x.l} mm</div>
+          <div style="font-size:\${f(2.7)};display:flex;justify-content:space-between"><span>\${esc(x.b)}</span><b>\${i}/\${x.q}</b></div>
+        </div>\`;
+      }
+    });
+  });
+
+  if (!n) { alert("No parts to print stickers for."); return; }
+  stkClean();
+  $("labels").innerHTML = html;
+  const st = document.createElement("style");
+  st.id = "pgs";
+  st.textContent = "@page{size:" + W + "mm " + H + "mm;margin:0}.lb{width:" + W + "mm;height:" + H + "mm}";
+  document.head.appendChild(st);
+  document.body.dataset.print = "stk";
+  window.addEventListener("afterprint", stkClean, { once: true });
+  window.print();
+};
+
+$("v1").onclick = () => { view = "unit"; render(); };
+$("v2").onclick = () => { view = "board"; render(); };
+
+$("pvs").onclick = () => {
+  pend.filter(x => x.q > 0).forEach(x => cur().parts.push(x));
+  pend = [];
+  $("pv").style.display = "none";
+  renderList();
+  render();
+};
+
+$("pvd").onclick = () => {
+  pend = [];
+  $("pv").style.display = "none";
+};
+
+$("newc").onclick = newCust;
+$("srch").oninput = renderList;
+$("delc").onclick = () => {
+  if (confirm("Delete this customer and all parts?")) {
+    db.customers = db.customers.filter(c => c.id !== db.cur);
+    if (!db.customers.length) newCust();
+    db.cur = db.customers[0].id;
+    save();
+    fill();
+    renderList();
+    render();
+  }
+};
+
+// Two-way bindings for Customer details
+[["cc","code"],["cn","name"],["dt","date"],["nt","notes"]].forEach(([id, k]) => {
+  const el = $(id);
+  if (el) el.oninput = () => { cur()[k] = el.value; renderList(); render(); };
+});
+
+// Two-way bindings for Settings
+[["co","co"],["sl","sl"],["sw","sw"],["ws","ws"]].forEach(([id, k]) => {
+  const el = $(id);
+  if (el) el.oninput = () => { db.set[k] = id === "co" ? el.value : (+el.value || 0); render(); };
+});
+
+// Board materials two-way bindings (Order level)
+if ($("cb")) $("cb").oninput = () => {
+  const val = $("cb").value;
+  cur().mainBoard = val;
+  save();
+};
+if ($("cb6")) $("cb6").oninput = () => {
+  const val = $("cb6").value;
+  cur().backBoard = val;
+  save();
+};
+if ($("cbt")) $("cbt").onchange = () => {
+  const val = $("cbt").value;
+  cur().backType = val;
+  save();
+};
+
+// Single part adder
+$("add").onclick = () => {
+  const b = val("b").trim() || cur().mainBoard || "Color 273 18mm";
+  const p = val("p").trim() || "Part";
+  const w = num("w");
+  const l = num("l");
+  const q = num("q", 1);
+  const SL = +db.set.sl || 2440;
+
+  if (!b || !w || !l || !q) { alert("Please fill in Board, Part Name, Width, Length and Qty."); return; }
+
+  const push = (pp, ll) => cur().parts.push({ b: b, u: un(), p: pp, l: Math.round(ll), w: Math.round(w), q: Math.round(q) });
+
+  if (l > SL && confirm("Length " + l + "mm is longer than the sheet (" + SL + "mm). Split into two pieces?")) {
+    const lo = Math.floor(l / 2);
+    push(p + " (lower)", lo);
+    push(p + " (upper)", l - lo);
+  } else {
+    push(p, l);
+  }
+
+  setVal("w", "");
+  setVal("l", "");
+  setVal("q", 1);
+  if ($("w")) $("w").focus();
+  renderList();
+  render();
+};
+
+["w","l","q"].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener("keydown", e => { if (e.key === "Enter") $("add").click(); });
+});
+
+// Parametric Presets dictionary
+const PF = [
+  "cdy","cdxr","cdsec","cdb6w","cskr","cdbk","cdmode","cdwr","clp","cdg","cdw","ctl","cdls","clay",
+  "ctp","cdv","cfw","cfh","cu","cw","ch","cd","ct","cdn","cb","cb6","cf","cas","cdr","cds","cdsr",
+  "cbt","cbw","cbh","cdh","csl","cdlr","cfr","car","csp","ccn"
+];
+
+const DEFP = {
+  "Cupboard": { cdy:"no", cdxr:36, cdmode:"door", cdwr:50, cfw:4, clp:0, cu:"Cupboard", cw:1000, ch:2100, cd:580, ct:18, cdn:2, cf:0, cas:3, cdr:0, cds:"", cdsr:100, cbt:"6", cbw:0, cbh:10, cdh:140, csl:26, cdlr:30, cfr:20, car:36, cskr:0, clay:"stack", cn2:1, ccn:0 },
+  "TV Unit": { cdy:"no", cdxr:0, cdmode:"full", cdwr:0, cfw:4, clp:0, cu:"TV Unit", cw:1800, ch:450, cd:400, ct:18, cdn:0, cf:1, cas:0, cdr:0, cds:"", cdsr:20, cbt:"18", cbw:0, cbh:0, cdh:140, csl:26, cdlr:30, cfr:20, car:40, cskr:0, clay:"stack", cn2:1 },
+  "Drawer Unit": { cdy:"yes", cu:"Drawer Unit", cw:1800, ch:300, cd:400, ct:18, cdn:0, cf:0, cas:0, cdr:3, cds:"", cdsr:20, cbt:"6", cbw:0, cbh:0, cdh:180, csl:26, cdlr:30, cfr:20, car:36, clay:"side", ctp:20, cdv:20, cfw:5, cfh:23, ctl:0, cdls:50, cdw:"", cskr:0, cdbk:"6", cdb6w:17, cn2:1 }
+};
+
+if (!db.set.presets) db.set.presets = {};
+Object.keys(DEFP).forEach(k => {
+  if (!db.set.presets[k]) db.set.presets[k] = JSON.parse(JSON.stringify(DEFP[k]));
+});
+
+function ptypes(sel) {
+  if (!$("ptype")) return;
+  $("ptype").innerHTML = Object.keys(db.set.presets).map(k => \`<option value="\${esc(k)}">\${esc(k)}</option>\`).join("");
+  if (sel) $("ptype").value = sel;
+}
+
+function lay() {
+  const sd = val("clay") === "side";
+  document.querySelectorAll(".stk").forEach(e => e.style.display = sd ? "none" : "");
+  const cup = val("ptype") === "Cupboard";
+  const dy = !cup || val("cdy") === "yes";
+  if ($("cdyl")) $("cdyl").style.display = cup ? "" : "none";
+  document.querySelectorAll(".drw").forEach(e => { e.style.display = dy ? "" : "none"; });
+}
+
+if ($("clay")) $("clay").onchange = lay;
+if ($("cdy")) $("cdy").onchange = () => {
+  if (val("cdy") === "yes" && num("cdr") === 0) setVal("cdr", 1);
+  lay();
+};
+
+function loadPreset() {
+  const type = val("ptype", "Cupboard");
+  const v = db.set.presets[type] || {};
+  const dv = DEFP[type] || DEFP["Cupboard"] || {};
+  PF.forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    if (id in v) el.value = v[id];
+    else if (id in dv) el.value = dv[id];
+  });
+  // Ensure board inputs reflect customer order if not set
+  if (cur().mainBoard) setVal("cb", cur().mainBoard);
+  if (cur().backBoard) setVal("cb6", cur().backBoard);
+  if (cur().backType) setVal("cbt", cur().backType);
+  lay();
+}
+
+function savePreset(name) {
+  const v = {};
+  PF.forEach(id => {
+    const el = $(id);
+    if (el) v[id] = el.value;
+  });
+  db.set.presets[name] = v;
+  save();
+}
+
+if ($("ptype")) $("ptype").onchange = loadPreset;
+if ($("psave")) $("psave").onclick = () => {
+  const t = val("ptype");
+  savePreset(t);
+  alert("Saved preset rules for " + t + ".");
+};
+if ($("pnew")) $("pnew").onclick = () => {
+  const n = (prompt("Enter new cabinet preset name (e.g. Dressing, Shoe Rack):") || "").trim();
+  if (!n) return;
+  savePreset(n);
+  ptypes(n);
+  loadPreset();
+};
+
+if ($("padv")) $("padv").onclick = () => {
+  const box = $("adv-box");
+  if (!box) return;
+  const isHidden = box.style.display === "none";
+  box.style.display = isHidden ? "block" : "none";
+  $("padv").textContent = isHidden ? "Hide Settings" : "More Settings";
+};
+
+ptypes("Cupboard");
+loadPreset();
+lay();
+
+// Complete, robust parametric cabinet calculation engine
+$("gen").onclick = () => {
+  const b = val("cb").trim() || cur().mainBoard || "Color 273 18mm";
+  const b6 = val("cb6").trim() || cur().backBoard || "Color 273 6mm";
+  const bt = val("cbt", "6");
+  const b18 = bt === "18" ? (val("cb6").trim() || b) : b;
+  const u = un();
+
+  const K = Math.max(1, num("cn2", 1));
+  const W = num("cw", 1000);
+  const H = num("ch", 2100);
+  const D = num("cd", 580);
+  const T = num("ct", 18);
+  const N = num("cdn", 2);
+  const F = num("cf", 0);
+  const A = num("cas", 3);
+  const ptype = val("ptype", "Cupboard");
+
+  const NOD = ptype === "Cupboard" && val("cdy") === "no";
+  const DR = NOD ? 0 : num("cdr", 0);
+
+  if (!W || !H || !D) {
+    alert("Please enter valid Width, Height, and Depth.");
+    return;
+  }
+
+  const iw = W - 2 * T;
+  const dsq = NOD ? 0 : (val("cds") === "" ? (DR > 0 ? 1 : 0) : num("cds"));
+  const dsd = D - num("cdsr", 100);
+  const dlen = dsd - num("cdlr", 30);
+  const dh = num("cdh", 140);
+  const sl = num("csl", 26);
+  const bw = iw + num("cbw", 0);
+  const bh = H - num("cbh", 10) - num("cskr", 0);
+
+  const lp = 2 * num("clp", 0);
+  const bot6 = val("cdbk", "6") === "6";
+  const gw = bot6 ? num("cdb6w", 17) : 0;
+  const bbd = bot6 ? b6 : b;
+
+  pend = [];
+  pendMsg = [];
+
+  const SL = +db.set.sl || 2440;
+  const manual = num("csp", 0);
+  const fr = [];
+  for (let i = 1; i <= F + A; i++) fr.push(i / (F + A + 1));
+
+  const q0 = (bb, p, l, w, q) => {
+    if (q > 0 && l > 0 && w > 0) {
+      pend.push({ b: bb, u: u, p: p, l: Math.round(l), w: Math.round(w), q: Math.round(q * K) });
+    }
+  };
+
+  const add = (bb, p, l, w, q) => {
+    if (!(q > 0 && l > 0 && w > 0)) return;
+    if (/^(Side Panel|Back)/.test(p) && l > SL) {
+      const sp = splitLen(l, SL, fr, manual, H);
+      q0(bb, p + " (lower)", sp.a, w, q);
+      q0(bb, p + " (upper)", sp.b, w, q);
+      pendMsg.push(p + " (" + Math.round(l) + "mm) exceeds " + SL + "mm sheet. Split into " + sp.a + " + " + sp.b + "mm " + (sp.shelf ? "at shelf." : "in center."));
+      return;
+    }
+    q0(bb, p, l, w, q);
+  };
+
+  if (val("clay") === "side") {
+    // Side by side drawer unit
+    if (DR < 1) { alert("Please set Drawers in Box to at least 1."); return; }
+    const n = DR;
+    const area = val("cdw") === "" ? iw : num("cdw");
+    const fb = Math.round((area + 2 * T) / n - num("cdg", 0) - sl - 2 * T);
+    const hin = H - 2 * T;
+    const dl = D - num("cdls", 50);
+
+    add(b, "Side Panel", hin, D, 2);
+    add(b, "Top", W + num("ctl", 0), D + num("ctp", 20), 1);
+    add(b, "Bottom", W, D, 1);
+    if (n > 1) add(b, "Divider", hin, D - num("cdv", 20), n - 1);
+
+    if (bt === "6") add(b6, "Back 6mm", area, hin, 1);
+    if (bt === "18") add(b18, "Back 18mm", area, hin, 1);
+
+    add(b, "Drawer sides", dl, dh, 2 * n);
+    add(b, "Drawer front", fb, dh, n);
+    add(b, "Drawer back", fb, dh, n);
+    add(bbd, "Drawer bottom", dl - 2 * T + gw, fb + gw, n);
+    add(b, "Face", H - num("cfh", 23) - lp, Math.floor(W / n - num("cfw", 5)) - lp, n);
+
+    showPreview();
+    return;
+  }
+
+  // Standard Cupboard & Tall Wardrobe
+  add(b, "Side Panel", H, D, 2);
+  add(b, "Top", iw, D - 26, 1);
+  add(b, "Bottom", iw, D, 1);
+
+  const bay = val("cdmode", "door") === "door" && N > 1;
+  const shw = bay ? (iw - (N - 1) * T) / N : iw;
+  const shm = bay ? N : 1;
+
+  if (F > 0) add(b, "Fix Shelves", shw, D - num("cfr", 20), F * shm);
+  if (A > 0) add(b, "Adjust Shelves", shw, D - num("car", 36), A * shm);
+  if (dsq > 0) add(b, "Drawer Shelves", shw, dsd, dsq * shm);
+
+  if (bay && N > 1) add(b, "Divider", H - 2 * T, D - 26, N - 1);
+
+  if (DR > 0) {
+    const leaveSpace = num("cdwr", 50);
+    const runnerThick = num("csl", 26);
+    const connSide = Math.abs(num("ccn", 0));
+    const isDoorSpace = val("cdmode", "door") === "door" && N > 1;
+    let bx;
+    let by = 1;
+
+    if (isDoorSpace) {
+      const bayWidth = (iw - (N - 1) * T) / N;
+      bx = Math.round(bayWidth - leaveSpace - runnerThick - connSide);
+      by = val("cdsec") === "one" ? 1 : N;
+    } else {
+      const hingeSides = N === 1 ? 1 : 2;
+      const totalLeave = hingeSides * leaveSpace;
+      bx = Math.round(iw - totalLeave - runnerThick - connSide);
+      by = 1;
+    }
+
+    const innerFront = Math.round(bx - 2 * T);
+
+    add(b, "Drawer sides", dlen, dh, 2 * DR * by);
+    add(b, "Drawer front", innerFront, dh, DR * by);
+    add(b, "Drawer back", innerFront, dh, DR * by);
+    add(bbd, "Drawer bottom", dlen - 2 * T + gw, innerFront + gw, DR * by);
+  }
+
+  if (bt === "6") add(b6, "Back 6mm", bh, bw, 1);
+  if (bt === "18") add(b18, "Back 18mm", bh, bw, 1);
+
+  if (N > 0) {
+    add(b, "Door", H - num("cfw", 4) - num("cskr", 0) - lp, Math.floor(W / N - num("cfw", 4)) - lp, N);
+  }
+
+  showPreview();
+};
+
+// Print List triggers native print dialog
+$("prt").onclick = () => window.print();
+
+// Data export handlers
+$("csv").onclick = () => dl(fname("csv"), csv(), "text/csv;charset=utf-8;");
+$("txt").onclick = () => dl(fname("txt"), txt(), "text/plain;charset=utf-8;");
+$("cpy").onclick = () => {
+  const t = txt();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(() => alert("Cutting list copied to clipboard!"));
+  } else {
+    alert("Copying not supported in this browser.");
+  }
+};
+$("clr").onclick = () => {
+  if (confirm("Clear all parts in " + (cur().name || "current customer") + "?")) {
+    cur().parts = [];
+    renderList();
+    render();
+  }
+};
+$("bk").onclick = () => dl("cutting-backup-" + today() + ".json", JSON.stringify(db, null, 2), "application/json");
+$("rs").onclick = () => $("rf").click();
+$("rf").onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!Array.isArray(d.customers)) throw new Error("Invalid format");
+      db = d;
+      save();
+      fill();
+      renderList();
+      render();
+      alert("Backup restored successfully!");
+    } catch (x) {
+      alert("Invalid backup file. Please select a valid JSON backup.");
+    }
+  };
+  r.readAsText(f);
+};
+
+// Initial boot
+fill();
+renderList();
+render();
+</script>
+</body>
+</html>`;
+}
